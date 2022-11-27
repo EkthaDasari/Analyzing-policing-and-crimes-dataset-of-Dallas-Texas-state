@@ -1,0 +1,219 @@
+---
+title: "MA304-Final-Project"
+author: "2110373-Ektha Sai Reddy-Dasari-MA304"
+date: "10/04/2022"
+output: html_document
+---
+
+<span style="color: #0072B2;">**INTRODUCTION**</span>
+
+The main aim of this coursework is to analyze the dataset which contains policing and crimes of Dallas, Texas state in the year 2016. The outcome of this work provides insights about how the crime rate can be decreased and how if any racism is involved in police suspecting and arrest of subjects. Understanding the patterns of crime and the reasons behind these crime records is important in order take precautions or measures to reduce crime in coming near times. 
+The dataset consists of various data about a particular crime including the race of subject. Adding race to either police or subject will help in understanding the pattern of racism if shown and the dataset also contains about the various descriptions/reasons of crime which help in analyzing and understanding the reason of crime from which preventive measures can be concluded.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(plotly)
+library(ggplot2)
+library(htmlwidgets)
+library(plyr)
+library(leaflet)
+library(devtools)
+library(lubridate)
+library(forcats)
+library(data.table)
+library(dplyr)
+library(tidyverse)
+library(xlsx)
+#install.packages("leaflet")
+#install.packages("gridExtra")
+#library(gridExtra)
+data<-read.csv("37-00049_UOF-P_2016_prepped.csv")
+data$LOCATION_LATITUDE<-as.numeric(gsub(",","",data$LOCATION_LATITUDE))
+data$LOCATION_LONGITUDE<-as.numeric(gsub(",","",data$LOCATION_LONGITUDE))
+```
+
+<span style="color: #0072B2;">**ANALYSIS**</span>
+
+From the dataset a total of 2383 cases were registered in 2016. Among these observations, there are few NA values in Latitude and Longitude columns. After removing these NA values of these two columns, the dataset contains 2328 observations. Out of which, using the plot "Count of No.of Subjects arrested", it can be conclude that 1999 subjects were arrested, and 329 subjects were not arrested.
+
+```{r, echo=FALSE}
+#no.of subjects arrested yes to no
+#data$SUBJECT_WAS_ARRESTED<-as.factor(data$SUBJECT_WAS_ARRESTED)
+count<-ggplot(data, aes(x=`SUBJECT_WAS_ARRESTED`))+
+  geom_bar(fill="#0072B2")+
+   ggtitle( "Count of Subjects arrested")+
+  theme(plot.title =  element_text(hjust = 0.5))+xlab("Subjects Arrested: Yes/No")+ylab("Count")
+ggplotly(count)
+```
+
+The next step in analysis is plotting the count of incidents that took place in each division. From plot “Count of Incidents per Division”, it can be observed that Central division has the highest number of cases, with count equal to 556, whereas Northwest has lowest number of cases with count equal to 189 while North Central, Northeast has cases 309 and 332 respectively. South Central, Southeast and Southwest has cases 303,344 and 295 respectively.
+
+```{r, echo=FALSE}
+#plotting of no.of incidents per division
+data$DIVISION<-as.factor(data$DIVISION)
+divPlot<-data%>%ggplot(aes(x=`DIVISION`))+geom_bar(fill="light blue")+theme(axis.text.x = element_text(angle =75 ))+
+  ggtitle( "Count of Incidents per division")+
+  theme(plot.title =  element_text(hjust = 0.5))+
+  xlab("Division")+ylab("Count")
+ggplotly(divPlot)
+
+```
+
+The next step in analysis is to identify the number of subjects arrested in each division, from the below plot it is observed that the number of subject arrested in Central division are 492 and in Southeast are 300 and Northwest are 169.
+
+```{r, echo=FALSE}
+divPlot<-data%>%ggplot(aes(x=`DIVISION`, fill=`SUBJECT_WAS_ARRESTED`))+geom_bar()+theme(axis.text.x = element_text(angle = 75))+
+    theme(plot.title =  element_text(hjust = 0.5))+ 
+  labs(title ="Count of subject arrests per division", y = "Count", x = "Division", fill="Subject Arrested")
+  
+ggplotly(divPlot)
+```
+
+The next step in analysis is to plot the percentage of subjects arrested respective to subject race.  A total of 460 cases were registered against people who belong to race White. Out of this 403 which is equal to 88% are arrested and the remaining 12% are not arrested. 1301 and 516 cases were registered against race Black and Hispanic and 86% of each race are arrested and the remaining 14% are not arrested. The race Asian and American Indian have a registered cases of 4 and 1 respectively where all of them are arrested. Races that come under Other category have a total registered cases of 11 out of which 73% equal to 8 subjects are arrested and the remaining 3 subjects are not arrested. There are also 35 registered cases for which race is not assigned and are categorized as Null race. In this category the percentage of arrested subjects is 74%.
+From this it can be concluded that the highest number of cases were registered against race Black followed by Hispanic and White and the percentage of subjects getting arrested is high in White race.
+
+
+```{r, echo=FALSE}
+#plotting of subject arrested to subject race
+
+description_subject_was_arrested <- setDT(data, )[,list(count = .N), by = .(SUBJECT_RACE,SUBJECT_WAS_ARRESTED)][,list(ARRESTED = SUBJECT_WAS_ARRESTED, count = count,
+percentage = paste0(formatC(count*100/sum(count), digits = 2), "%"),
+percent_value = count/sum(count)), by = SUBJECT_RACE]
+#plot
+description_subject_was_arrested<-ggplot(description_subject_was_arrested, aes(y = SUBJECT_RACE, x = count, fill = ARRESTED))+
+geom_bar(position = position_fill(),stat = "identity",width = 0.4)+
+labs(title ="Subject arrested in different race", y = "Subject Race", x = "Percentage", fill="Arrested")+
+geom_text(aes(label = percentage), position = position_fill(vjust = 0.5), size = 2, angle=90)+
+
+theme(plot.title = element_text(hjust = 0.5))+
+theme(plot.caption = element_text(hjust=0.5, size=rel(1)))+coord_flip()+theme(axis.text.x = element_text(angle = 75))
+#interactive  plot
+ggplotly(description_subject_was_arrested)
+
+#divPlot<-data%>%ggplot(aes(`SUBJECT_WAS_ARRESTED`, color=`SUBJECT_RACE`))+geom_bar(fill="white")+theme(axis.text.x = element_text(angle = 90))
+#ggplotly(divPlot)
+```
+
+The next step is analysing the subject description which is the reason of crime/charge against the subjects. Analysing this variable helps in understanding the main reason of crime and the preventive steps to be taken in order to reduce crime. From the plot “Count of Subject descriptions” it is observed that most of the incidents occurred had the reason Mentally Unstable, the count of this is equal to 412. The count of incidents under the influence of Alcohol, Unknown drugs, Alcohol and Unknown drugs together and Marijuana with a count equal to 378,312, 271 and 47 respectively. The count of incidents under FD-Unknown if Armed, FD-Suspect w/Other Weapon and FD-Suspect w/ Gun are 106, 24 and 33 respectively.  There are also incidents for which the cause is not known and the count of it is 358 which is relatively high as this may influence the overall categorization from which priority of preventive measures can be derived. There also cases where there is no specific cause of the incident which are categorized under None Detected with a count of 291.
+
+```{r, echo=FALSE}
+#pattern in the description of subject records
+Plot_desc<-data%>%ggplot(aes(`SUBJECT_DESCRIPTION`))+
+  geom_bar(fill="light blue")+
+  coord_flip()+
+  ggtitle( "Count of Subject Descriptions")+
+  theme(plot.title =  element_text(hjust = 0.5))+ylab("Count")+xlab("Subject Description")
+ggplotly(Plot_desc)
+```
+
+The next plot explains the percentage of subject description in different divisions. From the plot it is observed that the percentage of incidents due to Alcohol, Alcohol and Unknown drugs, Unknown drugs and Mentally unstable is high in Central division with percentages 36%, 35%, 23% and 21% respectively. North Central has more incidents due to FD-Suspect w/Other Weapon which constitutes 25% of incidents. Marijuana constitutes to 26% of cases in Northeast and Northwest has highest number of incidents due to FD-Suspect w/Other weapon and Alcohol which are equal to 12% of incidents respectively. Among the south divisions, South Central has high number of incidents due to Unknown drugs which is equal to 22% and Southeast has 36% of FD-Suspect w/Gun incidents while Southwest has 21% of FD-Unknown if Armed incidents. The Animal related incidents took place in Southeast and the two FD-Motor Vehicle incidents took place in South Central and Southwest respectively.
+
+```{r, echo=FALSE}
+# subject description in different divisions
+description_des <- setDT(data, )[,list(count = .N), by = .(SUBJECT_DESCRIPTION,DIVISION)][,list(DIVISION = DIVISION, 
+count = count,
+percentage = paste0(formatC(count*100/sum(count), digits = 2), "%"),
+percent_value = count/sum(count)), by = SUBJECT_DESCRIPTION]
+#plot
+description_des<-ggplot(description_des, aes(x = SUBJECT_DESCRIPTION, y = count, fill = DIVISION))+
+geom_bar(position = position_fill(),stat = "identity",width = 0.4)+
+labs(title ="Subject description in different divisions", x = "Subject Description", y = "Percentage", fill="Division")+
+geom_text(aes(label = percentage), position = position_fill(vjust = 0.5), size = 2)+
+coord_flip()+
+theme(plot.title = element_text(hjust = 0.5))+
+theme(plot.caption = element_text(hjust=0.5, size=rel(1)))+theme(axis.text.x = element_text(angle = 90))+scale_fill_manual("Division", values = c("CENTRAL" = "#CC79A7", "NORTH CENTRAL" = "#0072B2", "NORTHEAST" = "#009E73", "NORTHWEST"="#D55E00", "SOUTH CENTRAL"= "#E69F00", "SOUTHEAST"="#56B4E9", "SOUTHWEST"="#F0E442"))
+#interactive  plot
+ggplotly(description_des)
+```
+
+The plot “Number of incidents per day” indicates the number of incidents that took place on each day. From the plot it can be clearly observed that the number of incidents on weekends are high compared to weekdays. The highest number of incidents took place on Sunday and the count of incidents is 421 followed by 384 incidents on Saturday and 375 on Friday. The least number of incidents took place on Monday with count of 256.
+
+```{r, echo=FALSE}
+data$INCIDENT_DATE <- as.Date(data$INCIDENT_DATE, format = "%m/%d/%Y")
+data$INCIDENT_DATE <- as.Date(data$INCIDENT_DATE, format = "%Y-%m-%d")
+
+data$weekday<-weekdays(data$INCIDENT_DATE)
+count_day<-data %>%
+  mutate(weekday = fct_relevel(weekday, 
+                            "Sunday", "Monday", "Tuesday", 
+                            "Wednesday", "Thursday", "Friday", "Saturday"))%>%
+  ggplot( aes(x=weekday)) + 
+  geom_bar(fill="#CC79A7")+
+  labs(title="Number of incidents per day",x = "Weekday", y = "Number of Incidents")+ 
+  theme_minimal(base_size = 10)+theme(plot.title = element_text(hjust = 0.5))+
+  coord_flip()
+ggplotly(count_day)
+```
+
+From the plot “Number of incidents per month” it can be observed that the incidents in the month of March are highest with a count equal to 259 followed by the month February with 250 incidents. The months January, April, May and September have incidents more than 200. The least number of incidents took place in the month December with the count equal to 97.
+
+```{r, echo=FALSE}
+data$INCIDENT_MONTH <- months(as.Date(data$INCIDENT_DATE))
+count_month<-data %>%
+  mutate(INCIDENT_MONTH = fct_relevel(INCIDENT_MONTH, 
+                            "January", "February", "March", 
+                            "April", "May", "June", "July", "August",
+                            "September", "October", "November", "December"))%>%
+  ggplot( aes(x=INCIDENT_MONTH)) + 
+  geom_bar(fill="#0072B2")+
+  labs(title="Number of incidents per month",x = "Month", y = "Number of Incidents")+ 
+  theme_minimal(base_size = 10)+theme(plot.title = element_text(hjust = 0.5))+
+  coord_flip()
+ggplotly(count_month)
+```
+
+From the plot “Officers on Force-Years”, it can be observed that the officers who are on force for 2 years has handled the maximum number of incidents which is 336 followed by 3 years with a count of 313. The officers with 0, 30,32,33, 35 and 36 years on force has handled 5 or less than 5 incidents. 
+
+```{r, echo=FALSE}
+#no.of incidents handled vs officers experience
+data$OFFICER_YEARS_ON_FORCE<-as.numeric(gsub(",","",data$OFFICER_YEARS_ON_FORCE))
+data$SUBJECT_ID<-as.factor(data$OFFICER_YEARS_ON_FORCE)
+m<-table(data$SUBJECT_ID)
+write.xlsx(m, file="m.xlsx", sheetName = "Sheet1")
+```
+
+```{r, echo=FALSE}
+p<-read.xlsx("m.xlsx", sheetName = "Sheet1")
+names(p)[2]<-"No.of years"
+p$`No.of years`<-as.numeric(gsub(",","",p$`No.of years`))
+names(p)[3]<-"Incidents handled"
+x<-p%>%ggplot(aes(`No.of years`, `Incidents handled`))+
+  geom_col(fill="#009E73") +xlab("Years") + 
+  ylab("No. of incidents handled")+
+  theme(axis.text.x = element_text(angle = 90))+ ggtitle("Officers on force- Years")+theme(plot.title = element_text(hjust = 0.5))
+ggplotly(x)
+
+```
+
+The next plot explains about the distribution of subject races in different division. The plot “Subject Race in different Divisions” gives the percentage of subjects in different divisions based on race. From the plot it can be observed that Central division has highest percentage of Asians(75%), Whites(31%), Black(23%) and 40% of subjects without race. While the highest percentage of Hispanics is present in Southwest division. Northwest has 45% of other races. 
+
+```{r, echo=FALSE}
+#racial distribution of subjects in different divisions
+subject_division <- setDT(data, )[,list(count = .N), by = .(SUBJECT_RACE,DIVISION)][,list(DIVISION = DIVISION, 
+count = count,
+percentage = paste0(formatC(count*100/sum(count), digits = 2), "%"),
+percent_value = count/sum(count)), by = SUBJECT_RACE]
+#plot
+subject_division<-ggplot(subject_division, aes(x = SUBJECT_RACE, y = percent_value, fill = DIVISION))+
+geom_bar(position = position_fill(),stat = "identity",width = 0.4)+
+labs(title ="Subject Race in different Divisions", x = "Subject Race", y = "Percentage", fill="Division")+
+geom_text(aes(label = percentage), position = position_fill(vjust = 0.5), size = 2)+
+theme_minimal(base_size=10)+
+theme(plot.title = element_text(hjust = 0.5))+
+theme(plot.caption = element_text(hjust=0.5, size=rel(1)))+coord_flip()+theme(axis.text.x = element_text(angle = 90))+scale_fill_manual("DIVISION", values = c("CENTRAL" = "#CC79A7", "NORTH CENTRAL" = "#0072B2", "NORTHEAST" = "#009E73", "NORTHWEST"="#D55E00", "SOUTH CENTRAL"= "#E69F00", "SOUTHEAST"="#56B4E9", "SOUTHWEST"="#F0E442"))
+
+ggplotly(subject_division)
+```
+
+The next plotting is a map which shows the number of incidents recorded in different regions as clusters. From the plot it is observed that the incidents are divided into 8 clusters in the first layer with cluster sizes 1228, 299, 267, 223, 173, 112, 17 and 9. When any cluster is selected then it is further divided into smaller clusters which can again be divided further until to the point where incidents are displayed streetwise from which number of incidents in each street can be obtained.
+
+```{r, echo=FALSE}
+map_division<-data%>%leaflet()%>% addTiles()%>%addMarkers(lat=data$LOCATION_LATITUDE, lng = data$LOCATION_LONGITUDE,
+  clusterOptions = markerClusterOptions())
+map_division
+
+```
+
+<span style="color: #0072B2;">**CONCLUSION**</span>
+
+A total of 2328 incidents have taken place in Dallas, Texas state in the year 2016, out of which 1999 subjects were arrested. The highest number of incidents took place in Central division which are equal to 556 and out of these 492 subjects were arrested. It can also be observed that most of the incidents are committed by races Hispanic, Black and White, and the percentage of subjects arrested are high in White race equal to 88% and both Black and Hispanic are equal to 86%. From the analysis most of the incidents are due to the reason subjects being mentally unstable or under the influence of Alcohol and drugs. Most of the incidents in Central division are due to Mentally unstable, Alcohol and drugs and Northeast has incidents due to subjects who are under the influence of Marijuana. On weekends the number of incidents is high than on weekdays. Based on the above information from the analysis, appropriate measures can be taken by the police department to reduce the crime rate. 
