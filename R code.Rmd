@@ -1,6 +1,6 @@
 ---
-title: "MA304-Final-Project"
-author: "2110373-Ektha Sai Reddy-Dasari-MA304"
+title: "Project"
+author: "Ektha Sai Reddy-Dasari"
 date: "10/04/2022"
 output: html_document
 ---
